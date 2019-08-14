@@ -11,17 +11,23 @@
  2.支持中英文URL请求
  3.有上传、下载、GET、POST等多种请求方式
  4.支持无网提示
+ 5.使用了block后代理后面用不了
  */
 
 #import "QSHttpManage.h"
 
 @interface QSHttpManage()<NSURLSessionDownloadDelegate>
 
-@property (atomic, strong) NSURLSessionDownloadTask *downloadTask;
-@property (atomic, strong) NSURLSessionUploadTask *uploadTask;
-
-@property (nonatomic, strong) NSMutableArray *blockRspArray;  // 存放所有Rsp的block
-@property (nonatomic, strong) NSMutableArray *blockErrArray;  // 存放所有Rsp的block
+/**
+ 目的：把离散的代理事件整合成block方式返回
+ 这里字典相当一个"队列"，存储正在执行的所有任务返回的block
+ 以下字典用来存储 block 使用 key:@(self.uploadTask.taskIdentifier)  value:block
+ 用两个字典，是因为字典的key是唯一，而每一次请求返回两种结果（失败和成功）
+ **/
+@property (nonatomic, strong) NSMutableDictionary *blockRspDic; // 存放所有success的block
+@property (nonatomic, strong) NSMutableDictionary *blockErrDic; // 存放所有error的block
+@property (nonatomic, strong) NSMutableDictionary *blockProgressDic; // 存放进度的block
+@property (nonatomic, strong) NSMutableDictionary *downloadPathDic;     // 存放下载地址
 
 @end
 
@@ -59,7 +65,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)GET:(NSString *)urlStr param:(NSDictionary *)param success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)GET:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure {
     [self method:@"GET" url:urlStr param:param success:success failure:failure];
 }
 
@@ -72,7 +78,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)POST:(NSString *)urlStr param:(NSDictionary *)param success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)POST:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure {
     [self method:@"POST" url:urlStr param:param success:success failure:failure];
 }
 
@@ -85,7 +91,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)method:(NSString *)method url:(NSString *)urlStr param:(NSDictionary *)param success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)method:(NSString *)method url:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -96,7 +102,7 @@
     request.HTTPMethod = method;
     
     // 设备请求参数
-    if (param != nil) {
+    if (param) {
         NSError *paramError = nil;
         NSData *paramData = [NSJSONSerialization dataWithJSONObject:param
                                                             options:NSJSONWritingPrettyPrinted
@@ -105,42 +111,47 @@
             request.HTTPBody = paramData;
         }
         else {
-            NSLog(@"请求参数错误 = %@", paramError);
+            NSDictionary *errorDic = @{NSLocalizedDescriptionKey: @"请求参数格式错误"};
+            NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:100 userInfo:errorDic];
+            failure(error);
+            return ;
         }
     }
     
     NSURLSession *session = [NSURLSession sharedSession];
-    NSURLSessionDataTask *dataTask = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+    NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
         NSLog(@"%@", [NSThread currentThread]);
         if (data && (error == nil)) {
             NSError *dataError = nil;
             id result = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&dataError];
             if (dataError != nil) {
                 NSLog(@"响应数据解析失败 %@", dataError);
+                success(data);
             }
             if (success) {
                 success(result);
             }
-        } else {
-            if (failure) {
-                failure(error);
-            }
+        } else if (failure) {
+            failure(error);
         }
     }];
     
-    [dataTask resume];
+    [task resume];
 }
 
 
 /**
- 下载文件
-
+ 下载文件, 如果不设置存储路径的话，存储到默认位置 /Library/Caches 下
+ 
  @param urlStr 请求Url
  @param param 请求参数
+ @param storagePath 下载后存储的位置 例：如果完整路径是 download/test/b.zip 则只传user/test/
+ @param progress 下载进度(0.0 - 1.0)
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)downloadWithUrl:(NSString *)urlStr param:(NSDictionary *)param success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)downloadWithUrl:(NSString *)urlStr param:(NSDictionary *)param storagePath:(NSString *)storagePath
+               progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -151,7 +162,7 @@
     request.HTTPMethod = @"GET";
     
     // 设备请求参数
-    if (param != nil) {
+    if (param) {
         NSError *paramError = nil;
         NSData *paramData = [NSJSONSerialization dataWithJSONObject:param
                                                             options:NSJSONWritingPrettyPrinted
@@ -160,21 +171,24 @@
             request.HTTPBody = paramData;
         }
         else {
-            NSLog(@"请求参数错误 = %@", paramError);
+            NSDictionary *errorDic = @{NSLocalizedDescriptionKey: @"请求参数格式错误"};
+            NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:100 userInfo:errorDic];
+            failure(error);
+            return ;
         }
     }
     
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
     NSURLSession *session = [NSURLSession sessionWithConfiguration:config delegate:self delegateQueue:nil];
-    self.downloadTask = [session downloadTaskWithRequest:request];
-    [self.downloadTask resume];
+    NSURLSessionDownloadTask *task = [session downloadTaskWithRequest:request];
     
-    /*
-     // 使用了block后代理后面用不了
-    self.downloadTask = [session downloadTaskWithRequest:urlRequest completionHandler:^(NSURL * _Nullable location, NSURLResponse * _Nullable response, NSError * _Nullable error) {
-    }];
-    [self.downloadTask resume];
-     */
+    // 把block加到字典里，通过 task.taskIdentifier 来查找
+    [self.blockProgressDic setObject:progress forKey:@(task.taskIdentifier)];
+    [self.blockRspDic setObject:success forKey:@(task.taskIdentifier)];
+    [self.blockErrDic setObject:failure forKey:@(task.taskIdentifier)];
+    [self.downloadPathDic setObject:(storagePath != nil ? storagePath : @"") forKey:@(task.taskIdentifier)];
+    
+    [task resume];
 }
 
 
@@ -183,10 +197,11 @@
 
  @param urlStr 请求Url
  @param fileData 需要上传的数据
+ @param progress 上传进度(0.0 - 1.0)
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)uploadWithUrl:(NSString *)urlStr fileData:(NSData *)fileData success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)uploadWithUrl:(NSString *)urlStr fileData:(NSData *)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -196,14 +211,15 @@
     request.timeoutInterval = 30;
     request.HTTPMethod = @"POST";
     
-    if (fileData != nil) {
-        
+    if (fileData) {
         [request setValue:@"text/plain" forHTTPHeaderField:@"Content-Type"];
         [request setValue:[NSString stringWithFormat:@"%lu", (unsigned long)fileData.length] forHTTPHeaderField:@"Content-Length"];
-        
     } else {
-        // 请求错误，无参数
-        return;
+        // 请求错误，无数据
+        NSDictionary *errorDic = @{NSLocalizedDescriptionKey: @"上传数据为空"};
+        NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:100 userInfo:errorDic];
+        failure(error);
+        return ;
     }
     
     NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
@@ -211,20 +227,26 @@
                                                           delegate:self
                                                      delegateQueue:[NSOperationQueue mainQueue]];
     
-    self.uploadTask = [session uploadTaskWithRequest:request fromData:fileData];
-    [self.uploadTask resume];
+    NSURLSessionUploadTask *task = [session uploadTaskWithRequest:request fromData:fileData];
+    
+    // 把block加到字典里，通过 task.taskIdentifier 来查找
+    [self.blockProgressDic setObject:progress forKey:@(task.taskIdentifier)];
+    [self.blockRspDic setObject:success forKey:@(task.taskIdentifier)];
+    [self.blockErrDic setObject:failure forKey:@(task.taskIdentifier)];
+    
+    [task resume];
 }
-
 
 /**
  上传文件，流方式
-
+ 
  @param urlStr 请求Url
  @param filePath 文件路径
+ @param progress 上传进度(0.0 - 1.0)
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)uploadWithUrl:(NSString *)urlStr filePath:(NSString *)filePath success:(void(^)(id rspObject))success failure:(void(^)(NSError *error))failure {
+- (void)uploadWithUrl:(NSString *)urlStr filePath:(NSString *)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -234,7 +256,7 @@
     request.timeoutInterval = 30;
     request.HTTPMethod = @"POST";
     
-    if (filePath != nil) {
+    if (filePath) {
         NSFileManager *manage = [NSFileManager defaultManager];
         if ([manage fileExistsAtPath:filePath]) {
             // 流方式 >>> 上传文件, 节省内存, 请求头设置大小和类型
@@ -245,11 +267,18 @@
             NSString *contentSizeStr = [NSString stringWithFormat:@"%lld", [self fileSizeAtPath:fileUrl.path]];
             [request setValue:contentSizeStr forHTTPHeaderField:@"Content-Length"];
         } else {
-            // 请求错误，无参数
+            // 请求错误，路径不存在
+            NSDictionary *errorDic = @{NSLocalizedDescriptionKey: @"路径不存在"};
+            NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:100 userInfo:errorDic];
+            failure(error);
+            return ;
         }
         
     } else {
-        // 请求错误，无参数
+        // 请求错误，路径为空
+        NSDictionary *errorDic = @{NSLocalizedDescriptionKey: @"路径不能为空"};
+        NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:100 userInfo:errorDic];
+        failure(error);
         return ;
     }
     
@@ -258,50 +287,12 @@
                                                           delegate:self
                                                      delegateQueue:[NSOperationQueue mainQueue]];
     
-    self.uploadTask = [session uploadTaskWithStreamedRequest:request];
-    [self.uploadTask resume];
-}
-
-- (void)uploadWithUrl1:(NSString *)urlStr filePath:(NSString *)filePath success:(BlockRsp)success failure:(BlockErr)failure {
-    
-    // URL编码
-    NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-    NSURL *url = [NSURL URLWithString:urlString];
-    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
-    request.cachePolicy = NSURLRequestUseProtocolCachePolicy;
-    request.timeoutInterval = 30;
-    request.HTTPMethod = @"POST";
-    
-    if (filePath != nil) {
-        NSFileManager *manage = [NSFileManager defaultManager];
-        if ([manage fileExistsAtPath:filePath]) {
-            // 流方式 >>> 上传文件, 节省内存, 请求头设置大小和类型
-            NSURL *fileUrl = [NSURL fileURLWithPath:filePath];
-            //    NSLog(@"%@", fileUrl.pathExtension); // .zip
-            request.HTTPBodyStream = [NSInputStream inputStreamWithFileAtPath:fileUrl.path];
-            [request setValue:@"application/octet-stream" forHTTPHeaderField:@"Content-Type"];
-            NSString *contentSizeStr = [NSString stringWithFormat:@"%lld", [self fileSizeAtPath:fileUrl.path]];
-            [request setValue:contentSizeStr forHTTPHeaderField:@"Content-Length"];
-        } else {
-            // 请求错误，无参数
-        }
-        
-    } else {
-        // 请求错误，无参数
-        return ;
-    }
-    
-    NSURLSessionConfiguration *config = [NSURLSessionConfiguration defaultSessionConfiguration];
-    NSURLSession *session = [NSURLSession sessionWithConfiguration:config
-                                                          delegate:self
-                                                     delegateQueue:[NSOperationQueue mainQueue]];
-    
-    // 把block加到数组里, 应该加载到字典里，更好查找
-    [self.blockRspArray addObject:success];
-    [self.blockErrArray addObject:failure];
-    
-    self.uploadTask = [session uploadTaskWithStreamedRequest:request];
-    [self.uploadTask resume];
+    NSURLSessionUploadTask *task = [session uploadTaskWithStreamedRequest:request];
+    // 把block加到字典里，通过 task.taskIdentifier 来查找
+    [self.blockProgressDic setObject:progress forKey:@(task.taskIdentifier)];
+    [self.blockRspDic setObject:success forKey:@(task.taskIdentifier)];
+    [self.blockErrDic setObject:failure forKey:@(task.taskIdentifier)];
+    [task resume];
 }
 
 // 获取单个文件大小
@@ -316,7 +307,6 @@
 
 
 #pragma mark - session delegate
-#define IOSCachesDir [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject]
 
 /*
  2.下载完成
@@ -326,21 +316,30 @@
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask
 didFinishDownloadingToURL:(NSURL *)location {
     
-    NSLog(@"临时存储的路径 %@", location.absoluteString);
-    
-    NSString *documentsPath = IOSCachesDir;
-    NSString *audioPath = [documentsPath stringByAppendingPathComponent:@"MoonLogs.zip"];
-    NSURL *audiUrl = [NSURL fileURLWithPath:audioPath];
-    
-    // 移动图片的存储地址
     NSFileManager *manage = [NSFileManager defaultManager];
-    NSError *error = nil;
-    [manage moveItemAtURL:location toURL:audiUrl error:&error];
-    if (error == nil) {
-        NSLog(@"文件下载完成路径 %@", audiUrl.absoluteString);
+    
+    // 获取目的路径, 如果为空或者路径不存在时使用默认路径
+    NSString *storagePath = [self.downloadPathDic objectForKey:@(downloadTask.taskIdentifier)];
+    if (storagePath == nil) {
+        storagePath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
     } else {
-        NSLog(@"文件下载失败 %@", error);
+        if (![manage fileExistsAtPath:storagePath]) {
+            storagePath = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+        }
     }
+    NSString *allPath = [storagePath stringByAppendingPathComponent:downloadTask.response.suggestedFilename];
+    
+    // 把临时路径里的文件 移动到 目标路径
+    NSError *error = nil;
+    [manage moveItemAtURL:location toURL:[NSURL fileURLWithPath:allPath] error:&error];
+    if (error) {
+        NSLog(@"文件下载失败 %@", error);
+    } else {
+        NSLog(@"文件下载完成路径 %@", allPath);
+    }
+    
+    // 完成后把目的路径从字典中移除
+    [self.downloadPathDic removeObjectForKey:@(downloadTask.taskIdentifier)];
 }
 
 // 下载进度
@@ -354,9 +353,13 @@ didFinishDownloadingToURL:(NSURL *)location {
       didWriteData:(int64_t)bytesWritten
  totalBytesWritten:(int64_t)totalBytesWritten
 totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+    
     float progress = 1.0 * totalBytesWritten / totalBytesExpectedToWrite;
-    int progressInt = progress * 100;
-    NSLog(@"下载进度 %d%%", progressInt);
+    // 获取进度的 block 同时传值
+    BlockProgress progressBlock = (BlockProgress)[self.blockProgressDic objectForKey:@(downloadTask.taskIdentifier)];
+    if (progressBlock) {
+        progressBlock(progress);
+    }
 }
 
 // 断点续传
@@ -372,12 +375,32 @@ expectedTotalBytes:(int64_t)expectedTotalBytes {
  */
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task
 didCompleteWithError:(nullable NSError *)error {
-    if (error != nil) {
-        NSLog(@"请求错误 %@", error);
-    } else {
-        NSLog(@"请求成功 %@", error);
+    
+    // 获取成功的 block 同时传值
+    BlockRsp success = (BlockRsp)[self.blockRspDic objectForKey:@(task.taskIdentifier)];
+    BlockErr failure = (BlockErr)[self.blockErrDic objectForKey:@(task.taskIdentifier)];
+    BlockProgress progress = (BlockProgress)[self.blockProgressDic objectForKey:@(task.taskIdentifier)];
+    
+    if ((error == nil) && (success)) {
+        success(@"请求成功");
+    }
+    else if (failure) {
+        failure(error);
     }
     
+    // 请求完后任务结束，要把所有有关的block释放掉
+    if (success) {
+        [self.blockRspDic removeObjectForKey:@(task.taskIdentifier)];
+        success = nil;
+    }
+    if (failure) {
+        [self.blockErrDic removeObjectForKey:@(task.taskIdentifier)];
+        failure = nil;
+    }
+    if (progress) {
+        [self.blockProgressDic removeObjectForKey:@(task.taskIdentifier)];
+        progress = nil;
+    }
 }
 
 
@@ -394,24 +417,41 @@ didCompleteWithError:(nullable NSError *)error {
 totalBytesExpectedToSend:(int64_t)totalBytesExpectedToSend {
     
     float progress = 1.0 * totalBytesSent / totalBytesExpectedToSend;
-    int progressInt = progress * 100;
-    NSLog(@"上传进度 %d%%", progressInt);
+    // 获取进度的 block 同时传值
+    BlockProgress progressBlock = (BlockProgress)[self.blockProgressDic objectForKey:@(task.taskIdentifier)];
+    if (progressBlock) {
+        progressBlock(progress);
+    }
 }
 
 
 #pragma mark 数组懒加载
-- (NSMutableArray *)blockRspArray {
-    if (!_blockRspArray) {
-        _blockRspArray = [[NSMutableArray alloc] init];
+- (NSMutableDictionary *)blockProgressDic {
+    if (!_blockProgressDic) {
+        _blockProgressDic = [[NSMutableDictionary alloc] init];
     }
-    return _blockRspArray;
+    return _blockProgressDic;
 }
 
-- (NSMutableArray *)blockErrArray {
-    if (!_blockErrArray) {
-        _blockErrArray = [[NSMutableArray alloc] init];
+- (NSMutableDictionary *)blockRspDic {
+    if (!_blockRspDic) {
+        _blockRspDic = [[NSMutableDictionary alloc] init];
     }
-    return _blockErrArray;
+    return _blockRspDic;
+}
+
+- (NSMutableDictionary *)blockErrDic {
+    if (!_blockErrDic) {
+        _blockErrDic = [[NSMutableDictionary alloc] init];
+    }
+    return _blockErrDic;
+}
+
+- (NSMutableDictionary *)downloadPathDic {
+    if (!_downloadPathDic) {
+        _downloadPathDic = [[NSMutableDictionary alloc] init];
+    }
+    return _downloadPathDic;
 }
 
 @end
