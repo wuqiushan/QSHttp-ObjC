@@ -1,4 +1,4 @@
-# QSHttp-OC
+![image](https://github.com/SimonGitHub123/QSHttp-OC/blob/master/QSHttp-OC.png)
 
 [![Build Status](https://travis-ci.org/shuzheng/zheng.svg?branch=master)](https://github.com/SimonGitHub123/QSHttp-OC)  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![language](https://img.shields.io/badge/language-objective--c-green.svg)](1)
 
@@ -15,8 +15,7 @@
 * [x] 完成基本的GET、POST、上传、下载、等操作
 * [x] 完成delegate向block的转换
 * [x] 完成上传、下载的实时进度
-* [ ] 支持无网通知
-* [ ] 
+* [ ] 支持无网通知 
 
 #### 使用方法
 
@@ -34,7 +33,7 @@ GET方法示例：
 
 POST方法示例：
 ```Objective-C
-- (void)get_http {
+- (void)post_http {
     QSHttpManage *mange = [[QSHttpManage alloc] init];
     [mange POST:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:nil success:^(id  _Nonnull rspObject) {
         NSLog(@"响应数据  %@", rspObject);
@@ -46,7 +45,7 @@ POST方法示例：
 
 download下载文件示例：
 ```Objective-C
-- (void)get_http {
+- (void)download_http {
     QSHttpManage *mange = [[QSHttpManage alloc] init];
     [mange downloadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil storagePath:@"/Users/yyd-wlf/Desktop" progress:^(float progress) {
         
@@ -63,7 +62,7 @@ download下载文件示例：
 
 upload上传数据(NSData)示例：
 ```Objective-C
-- (void)get_http {
+- (void)uploadData_http {
     QSHttpManage *mange = [[QSHttpManage alloc] init];
     NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/javaLearn.zip"];
     [mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data progress:^(float progress) {
@@ -81,7 +80,7 @@ upload上传数据(NSData)示例：
 
 upload上传文件示例：
 ```Objective-C
-- (void)get_http {
+- (void)uploadFile_http {
     QSHttpManage *mange = [[QSHttpManage alloc] init];
     [self uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" progress:^(float progress) {
         
