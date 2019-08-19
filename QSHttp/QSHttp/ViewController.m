@@ -70,7 +70,7 @@
 
 - (void)download_http {
     
-    [self.mange downloadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil storagePath:@"/Users/yyd-wlf/Desktop" progress:^(float progress) {
+    [self.mange download:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil storagePath:@"/Users/yyd-wlf/Desktop" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"下载进度 %d%%", progressInt);
@@ -85,7 +85,7 @@
 - (void)uploadData_http {
     
     NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/javaLearn.zip"];
-    [self.mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data progress:^(float progress) {
+    [self.mange upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);
@@ -99,7 +99,7 @@
 
 - (void)uploadFile_http {
     
-    [self.mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" progress:^(float progress) {
+    [self.mange upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);

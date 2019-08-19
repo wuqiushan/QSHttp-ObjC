@@ -50,7 +50,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)downloadWithUrl:(NSString *)urlStr param:(NSDictionary *)param storagePath:(NSString *)storagePath
+- (void)download:(NSString *)urlStr param:(NSDictionary *)param storagePath:(NSString *)storagePath
                progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 /**
@@ -62,7 +62,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)uploadWithUrl:(NSString *)urlStr fileData:(NSData *)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)upload:(NSString *)urlStr fileData:(NSData *)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 /**
  上传文件，流方式
@@ -73,7 +73,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)uploadWithUrl:(NSString *)urlStr filePath:(NSString *)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)upload:(NSString *)urlStr filePath:(NSString *)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 
 @end
