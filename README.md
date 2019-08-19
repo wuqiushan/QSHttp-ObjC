@@ -22,7 +22,7 @@
 ### 安装方法
 使用cocopods:
 ```ruby
-pod 'QSHttp-OC', '~> 1.0.1'
+pod 'QSHttp-OC', '~> 1.0.2'
 ```
 
 ### 使用方法
