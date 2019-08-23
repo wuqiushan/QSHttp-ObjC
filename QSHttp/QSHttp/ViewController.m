@@ -11,7 +11,7 @@
 
 @interface ViewController ()
 
-@property (nonatomic, strong) QSHttpManage *mange;
+//@property (nonatomic, strong) QSHttpManage *mange;
 
 @end
 
@@ -19,8 +19,6 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    self.mange = [[QSHttpManage alloc] init];
     [self setupView];
 }
 
@@ -53,7 +51,8 @@
 
 - (void)get_http {
     
-    [self.mange GET:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:nil success:^(id  _Nonnull rspObject) {
+    QSHttpManage *mange = [[QSHttpManage alloc] init];
+    [mange GET:@"http://www.eechot.ga/server/QSHttp/GET/天气" param:nil success:^(id  _Nonnull rspObject) {
         NSLog(@"响应数据  %@", rspObject);
     } failure:^(NSError * _Nonnull error) {
         NSLog(@"失败 %@", error);
@@ -61,7 +60,9 @@
 }
 
 - (void)post_http {
-    [self.mange POST:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:nil success:^(id  _Nonnull rspObject) {
+    
+    QSHttpManage *mange = [[QSHttpManage alloc] init];
+    [mange POST:@"http://www.eechot.ga/server/QSHttp/POST" param:nil success:^(id  _Nonnull rspObject) {
         NSLog(@"响应数据  %@", rspObject);
     } failure:^(NSError * _Nonnull error) {
         NSLog(@"失败 %@", error);
@@ -70,7 +71,8 @@
 
 - (void)download_http {
     
-    [self.mange download:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil storagePath:@"/Users/yyd-wlf/Desktop" progress:^(float progress) {
+    QSHttpManage *mange = [[QSHttpManage alloc] init];
+    [mange download:@"http://www.eechot.ga/server/QSHttp/Download" param:nil storagePath:@"/Users/yyd-wlf/Desktop/QSHttpFile" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"下载进度 %d%%", progressInt);
@@ -84,8 +86,9 @@
 
 - (void)uploadData_http {
     
-    NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/javaLearn.zip"];
-    [self.mange upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data progress:^(float progress) {
+    QSHttpManage *mange = [[QSHttpManage alloc] init];
+    NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/QSHttpFile/nginx-1.16.0.tar.gz"];
+    [mange upload:@"http://www.eechot.ga/server/QSHttp/Upload" fileData:data progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);
@@ -99,7 +102,8 @@
 
 - (void)uploadFile_http {
     
-    [self.mange upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" progress:^(float progress) {
+    QSHttpManage *mange = [[QSHttpManage alloc] init];
+    [mange upload:@"http://www.eechot.ga/server/QSHttp/Upload" filePath:@"/Users/yyd-wlf/Desktop/QSHttpFile/nginx-1.16.0.tar.gz" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);
@@ -109,65 +113,6 @@
     } failure:^(NSError * _Nonnull error) {
         NSLog(@"失败 %@", error);
     }];
-}
-
-
-- (void)initData {
-    
-    NSLog(@"ViewController 1 %@", [NSThread currentThread]);
-    NSMutableDictionary *dic = [[NSMutableDictionary alloc] init];
-    dic[@"name"] = @"张三";
-    QSHttpManage *mange = [[QSHttpManage alloc] init];
-//    [mange GET:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:dic success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    NSLog(@"ViewController 2 %@", [NSThread currentThread]);
-    
-//    [mange GET:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:dic success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    
-//    [mange downloadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    
-    // 测试文件上传
-//    [mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    
-    // 测试数据上传
-//    NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/javaLearn.zip"];
-//    [mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    
-//    [mange uploadWithUrl1:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
-    
-//    [mange uploadWithUrl:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:nil progress:^(float progress) {
-//
-//        int progressInt = progress * 100;
-//        NSLog(@"上传进度 %d%%", progressInt);
-//
-//    } success:^(id  _Nonnull rspObject) {
-//        NSLog(@"响应数据  %@", rspObject);
-//    } failure:^(NSError * _Nonnull error) {
-//        NSLog(@"失败 %@", error);
-//    }];
 }
 
 

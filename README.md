@@ -1,10 +1,12 @@
-
 ![image](https://github.com/SimonGitHub123/QSHttp-OC/blob/master/QSHttp-OC.png)
 
 [![Build Status](https://travis-ci.org/shuzheng/zheng.svg?branch=master)](https://github.com/SimonGitHub123/QSHttp-OC)  [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![language](https://img.shields.io/badge/language-objective--c-green.svg)](1) [![language](https://img.shields.io/badge/support-cocoapods-269539.svg)](1)
 
 ### 概述
-为简化后期的手机客户端与服务器调试，特此对各个环境进行了封装，本仓库为Objective-C版本，安卓仓库传送门、服务器仓库传送门。
+为简化后期的手机客户端与服务器调试，特此对各个环境进行了封装，本仓库为iOS版本，其它有Java(安卓通用)版本、服务器版本。
+* [x] 支持iOS，[传送门](https://github.com/wuqiushan/QSHttp-OC)
+* [x] 支持android(java)，[传送门](https://github.com/wuqiushan/QSHttp-Java)
+* [x] 支持服务器端，[传送门](https://github.com/wuqiushan/QSHttp-Server)
 
 
 ### 特点
@@ -20,9 +22,9 @@
 
 
 ### 安装方法
-使用cocopods:
+使用cocoapods:
 ```ruby
-pod 'QSHttp-OC', '~> 1.0.2'
+pod 'QSHttp-OC', '~> 1.1.1'
 ```
 
 ### 使用方法
@@ -30,8 +32,9 @@ pod 'QSHttp-OC', '~> 1.0.2'
 GET方法示例：
 ```Objective-C
 - (void)get_http {
+    
     QSHttpManage *mange = [[QSHttpManage alloc] init];
-    [mange GET:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:nil success:^(id  _Nonnull rspObject) {
+    [mange GET:@"http://www.eechot.ga/server/QSHttp/GET/天气" param:nil success:^(id  _Nonnull rspObject) {
         NSLog(@"响应数据  %@", rspObject);
     } failure:^(NSError * _Nonnull error) {
         NSLog(@"失败 %@", error);
@@ -41,9 +44,10 @@ GET方法示例：
 
 POST方法示例：
 ```Objective-C
-- (void)get_http {
+- (void)post_http {
+    
     QSHttpManage *mange = [[QSHttpManage alloc] init];
-    [mange POST:@"http://localhost:8080/javaOne_war_exploded/天气jahttp" param:nil success:^(id  _Nonnull rspObject) {
+    [mange POST:@"http://www.eechot.ga/server/QSHttp/POST" param:nil success:^(id  _Nonnull rspObject) {
         NSLog(@"响应数据  %@", rspObject);
     } failure:^(NSError * _Nonnull error) {
         NSLog(@"失败 %@", error);
@@ -53,9 +57,10 @@ POST方法示例：
 
 download下载文件示例：
 ```Objective-C
-- (void)get_http {
+- (void)download_http {
+    
     QSHttpManage *mange = [[QSHttpManage alloc] init];
-    [mange download:@"http://localhost:8080/javaOne_war_exploded/QSDownloadServlet" param:nil storagePath:@"/Users/yyd-wlf/Desktop" progress:^(float progress) {
+    [mange download:@"http://www.eechot.ga/server/QSHttp/Download" param:nil storagePath:@"/Users/yyd-wlf/Desktop/QSHttpFile" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"下载进度 %d%%", progressInt);
@@ -70,10 +75,11 @@ download下载文件示例：
 
 upload上传数据(NSData)示例：
 ```Objective-C
-- (void)get_http {
+- (void)uploadData_http {
+    
     QSHttpManage *mange = [[QSHttpManage alloc] init];
-    NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/javaLearn.zip"];
-    [mange upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" fileData:data progress:^(float progress) {
+    NSData *data = [NSData dataWithContentsOfFile:@"/Users/yyd-wlf/Desktop/QSHttpFile/nginx-1.16.0.tar.gz"];
+    [mange upload:@"http://www.eechot.ga/server/QSHttp/Upload" fileData:data progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);
@@ -88,9 +94,10 @@ upload上传数据(NSData)示例：
 
 upload上传文件示例：
 ```Objective-C
-- (void)get_http {
+- (void)uploadFile_http {
+    
     QSHttpManage *mange = [[QSHttpManage alloc] init];
-    [self upload:@"http://localhost:8080/javaOne_war_exploded/QSUploadServlet" filePath:@"/Users/yyd-wlf/Desktop/123.zip" progress:^(float progress) {
+    [mange upload:@"http://www.eechot.ga/server/QSHttp/Upload" filePath:@"/Users/yyd-wlf/Desktop/QSHttpFile/nginx-1.16.0.tar.gz" progress:^(float progress) {
         
         int progressInt = progress * 100;
         NSLog(@"上传进度 %d%%", progressInt);
