@@ -65,7 +65,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)GET:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure {
+- (void)GET:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param success:(BlockRsp)success failure:(BlockErr)failure {
     [self method:@"GET" url:urlStr param:param success:success failure:failure];
 }
 
@@ -78,7 +78,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)POST:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure {
+- (void)POST:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param success:(BlockRsp)success failure:(BlockErr)failure {
     [self method:@"POST" url:urlStr param:param success:success failure:failure];
 }
 
@@ -150,7 +150,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)download:(NSString *)urlStr param:(NSDictionary *)param storagePath:(NSString *)storagePath
+- (void)download:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param storagePath:(NSString * _Nonnull)storagePath
                progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
@@ -201,7 +201,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)upload:(NSString *)urlStr fileData:(NSData *)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
+- (void)upload:(NSString * _Nonnull)urlStr fileData:(NSData * _Nonnull)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
@@ -246,7 +246,7 @@
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)upload:(NSString *)urlStr filePath:(NSString *)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
+- (void)upload:(NSString * _Nonnull)urlStr filePath:(NSString * _Nonnull)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure {
     
     // URL编码
     NSString *urlString = [urlStr stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];

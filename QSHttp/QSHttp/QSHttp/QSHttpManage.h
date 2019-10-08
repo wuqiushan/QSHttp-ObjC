@@ -27,7 +27,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)GET:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)GET:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param success:(BlockRsp)success failure:(BlockErr)failure;
 
 
 /**
@@ -38,7 +38,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)POST:(NSString *)urlStr param:(NSDictionary *)param success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)POST:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param success:(BlockRsp)success failure:(BlockErr)failure;
 
 /**
  下载文件, 如果不设置存储路径的话，存储到默认位置 /Library/Caches 下
@@ -50,8 +50,8 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)download:(NSString *)urlStr param:(NSDictionary *)param storagePath:(NSString *)storagePath
-               progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)download:(NSString * _Nonnull)urlStr param:(NSDictionary * _Nullable)param storagePath:(NSString * _Nonnull)storagePath
+        progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 /**
  上传数据，如：单个图片、语音等数据量比较小的，大文件请通过本类的文件上传方法
@@ -62,7 +62,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)upload:(NSString *)urlStr fileData:(NSData *)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)upload:(NSString * _Nonnull)urlStr fileData:(NSData * _Nonnull)fileData progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 /**
  上传文件，流方式
@@ -73,7 +73,7 @@ typedef void(^BlockErr)(NSError *error);
  @param success 请求成功响应
  @param failure 请求失败响应
  */
-- (void)upload:(NSString *)urlStr filePath:(NSString *)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
+- (void)upload:(NSString * _Nonnull)urlStr filePath:(NSString * _Nonnull)filePath progress:(BlockProgress)progress success:(BlockRsp)success failure:(BlockErr)failure;
 
 
 @end
